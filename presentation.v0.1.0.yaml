@@ -1,0 +1,372 @@
+# DDF Presentation Schema — v0.1.0
+# Declarative Document Format — https://ddf.dev
+# SPDX-License-Identifier: Apache-2.0
+
+# ═══════════════════════════════════════════════════════════════
+#  OVERVIEW
+# ═══════════════════════════════════════════════════════════════
+#
+#  DDF Presentation is a YAML schema that describes slide decks
+#  declaratively. A compiler reads this YAML and produces a .pptx
+#  file. The goal is token-efficient document generation by LLMs:
+#  ~3-5x fewer tokens than equivalent imperative library code.
+#
+#  Design principles:
+#    1. Declarative over imperative
+#    2. Sensible defaults — omit what you don't need
+#    3. Theme variables — define once, reference everywhere
+#    4. Layout helpers — row/grid auto-positioning
+#    5. Masters — reusable slide templates with data binding
+#
+# ═══════════════════════════════════════════════════════════════
+
+# Every DDF presentation file has a single top-level key:
+# presentation: { ... }
+
+# ─── ROOT ─────────────────────────────────────────────────────
+
+# presentation:
+#   layout:    string          # "16x9" | "16x10" | "4x3" | "wide"  (default: "16x9")
+#   title:     string          # Presentation metadata title
+#   author:    string          # Presentation metadata author
+#   theme:     Theme           # Color/font definitions
+#   masters:   map[string, Master]  # Reusable slide templates
+#   slides:    list[Slide]     # Ordered list of slides
+
+# ─── THEME ────────────────────────────────────────────────────
+
+# Theme:
+#   colors:    map[string, HexColor]   # Named colors, referenced as $name
+#   fonts:     map[string, string]     # Named fonts, referenced as $name
+#
+# HexColor:  6-char hex string, NO "#" prefix.  e.g. "1E2761"
+#
+# Theme variables are resolved recursively before compilation.
+# Any string value matching /^\$[a-zA-Z_]\w*$/ is looked up in
+# the flattened theme map. Values like "$4.2M" are NOT resolved
+# (must start with $ followed by a letter or underscore).
+
+# ─── MASTER ───────────────────────────────────────────────────
+
+# Master:
+#   background:  HexColor | Background    # Slide background
+#   elements:    list[Element]             # Template elements
+#
+# Masters support {{placeholder}} syntax in any string value.
+# When a slide references a master, placeholders are replaced
+# with values from the slide's `data` map.
+#
+# Example:
+#   masters:
+#     title_slide:
+#       background: $primary
+#       elements:
+#         - type: text
+#           text: "{{title}}"
+#           ...
+#   slides:
+#     - master: title_slide
+#       data:
+#         title: "Q3 Report"
+
+# ─── SLIDE ────────────────────────────────────────────────────
+
+# Slide:
+#   master:      string              # Reference to a defined master (optional)
+#   data:        map[string, string]  # Placeholder values for master (optional)
+#   background:  HexColor | Background
+#   notes:       string              # Speaker notes
+#   elements:    list[Element]       # Slide-level elements (merged after master elements)
+
+# Background:
+#   color:         HexColor
+#   path:          string            # Image file path
+#   transparency:  number            # 0-100
+
+# ─── ELEMENTS ─────────────────────────────────────────────────
+#
+# Every element has:
+#   type:  "text" | "shape" | "image" | "chart" | "table" | "group" | "icon"
+#   x:     number    # Position in inches from left edge
+#   y:     number    # Position in inches from top edge
+#   w:     number    # Width in inches
+#   h:     number    # Height in inches
+
+# ─── TEXT ELEMENT ─────────────────────────────────────────────
+
+# Element (type: text):
+#   text:       string              # Simple text content
+#   runs:       list[Run]           # Rich text (multiple formats in one box)
+#   bullets:    list[string | BulletItem]  # Bulleted list
+#
+#   # Font properties (apply to entire element, overridden by run-level)
+#   font:       string              # Font face name or $theme_ref
+#   size:       number              # Font size in points
+#   color:      HexColor            # Font color
+#   bold:       boolean
+#   italic:     boolean
+#   underline:  boolean
+#
+#   # Layout
+#   align:      "left" | "center" | "right" | "justify"
+#   valign:     "top" | "middle" | "bottom"
+#   margin:     number              # Internal margin in points
+#   lineSpacing: number             # Line spacing multiplier
+#   spaceAfter:  number             # Space after paragraph in points
+#   spaceBefore: number             # Space before paragraph in points
+#   rotate:     number              # Rotation in degrees
+#   charSpacing: number             # Character spacing in points
+#
+# Only ONE of text/runs/bullets should be specified.
+
+# Run:
+#   text:       string    # (required)
+#   font:       string
+#   size:       number
+#   color:      HexColor
+#   bold:       boolean
+#   italic:     boolean
+#   underline:  boolean
+#   spaceAfter: number    # Space after this run's paragraph
+#   link:       string    # URL hyperlink
+
+# BulletItem:
+#   text:       string    # (required)
+#   font:       string
+#   size:       number
+#   color:      HexColor
+#   bold:       boolean
+#   indent:     number    # Indentation level (0-based)
+#   spaceAfter: number
+
+# ─── SHAPE ELEMENT ────────────────────────────────────────────
+
+# Element (type: shape):
+#   shape:    "rectangle" | "rect" | "rounded_rectangle" | "rounded" |
+#             "oval" | "circle" | "line"
+#   fill:     HexColor             # Fill color
+#   line:     LineStyle            # Border/line style
+#   radius:   number               # Corner radius in inches (rounded shapes only)
+#   shadow:   Shadow               # Drop shadow
+#   transparency: number           # Fill transparency 0-100
+#   rotate:   number
+
+# LineStyle:
+#   color:    HexColor
+#   width:    number               # Line width in points
+
+# Shadow:  string | ShadowObject
+#   # String presets: "default" | "soft" | "hard" | "glow" | "up"
+#   # Or explicit object:
+#
+# ShadowObject:
+#   blur:     number    # Blur radius in points (default: 6)
+#   offset:   number    # Shadow offset in points (default: 2)
+#   angle:    number    # Shadow direction in degrees (default: 135)
+#   color:    HexColor  # Shadow color (default: "000000")
+#   opacity:  number    # Shadow opacity 0.0-1.0 (default: 0.15)
+
+# ─── IMAGE ELEMENT ────────────────────────────────────────────
+
+# Element (type: image):
+#   path:          string    # File path or URL
+#   data:          string    # Base64-encoded image data
+#   rounding:      boolean   # Circular crop
+#   transparency:  number    # 0-100
+#   sizing:        Sizing    # Contain/cover/crop
+#   rotate:        number
+#   altText:       string
+#   link:          string    # URL hyperlink
+
+# Sizing:
+#   type:  "contain" | "cover" | "crop"
+#   x:     number    # Crop offset (crop only)
+#   y:     number    # Crop offset (crop only)
+#   w:     number
+#   h:     number
+
+# ─── ICON ELEMENT ─────────────────────────────────────────────
+
+# Element (type: icon):
+#   icon:    string       # Icon name from built-in set, or raw character(s)
+#   bg:      HexColor     # Circle background color
+#   color:   HexColor     # Glyph color (default: "FFFFFF")
+#   size:    number       # Circle diameter in inches (default: 0.5)
+#
+# Built-in icon names:
+#   dollar, percent, hash, at, plus, check, star, arrow_up,
+#   arrow_right, heart, x, bell, chart, users, gear, target,
+#   mail, flag, lightning, trophy, shield, rocket, globe, lock,
+#   book, tools, briefcase, search
+#
+# Any string not matching a built-in name is used as a raw
+# character glyph (e.g. icon: "A" renders the letter A).
+
+# ─── CHART ELEMENT ────────────────────────────────────────────
+
+# Element (type: chart):
+#   chart:      "bar" | "line" | "pie" | "doughnut" | "scatter" | "radar"
+#   series:     list[Series]     # (required)
+#   colors:     list[HexColor]   # Series/segment colors
+#   direction:  "col" | "bar"    # Bar chart direction (default: "col")
+#   chartTitle: string           # Chart title text
+#   style:      ChartStyle
+
+# Series:
+#   name:     string
+#   labels:   list[string]
+#   values:   list[number]
+
+# ChartStyle:
+#   legend:       boolean             # Show legend
+#   legendPos:    "b" | "t" | "l" | "r"  # Legend position
+#   legendSize:   number              # Legend font size
+#   dataLabels:   string              # "outEnd" | "inEnd" | "center"
+#   dataLabelColor: HexColor
+#   showPercent:  boolean             # Show percentage labels (pie/doughnut)
+#   smooth:       boolean             # Smooth lines (line charts)
+#   lineSize:     number              # Line width (line charts)
+#   axisColor:    HexColor            # Axis label color
+#   gridLines:    "subtle" | "none"   # Grid line preset
+#   chartArea:    object              # Chart area fill/border
+
+# ─── TABLE ELEMENT ────────────────────────────────────────────
+
+# Element (type: table):
+#   rows:       list[list[string | number | CellObject]]  # (required)
+#   colWidths:  list[number]     # Column widths in inches
+#   border:     BorderStyle
+#   font:       string           # Default font for all cells
+#   size:       number           # Default font size for all cells
+#   color:      HexColor         # Default font color
+#   fill:       HexColor         # Default cell fill
+#   autoPage:   boolean          # Auto-paginate long tables
+
+# CellObject:
+#   text:       string
+#   font:       string
+#   size:       number
+#   color:      HexColor
+#   fill:       HexColor
+#   bold:       boolean
+#   italic:     boolean
+#   align:      "left" | "center" | "right"
+#   valign:     "top" | "middle" | "bottom"
+#   colspan:    number
+#   rowspan:    number
+
+# BorderStyle:
+#   pt:     number       # Border width in points
+#   color:  HexColor     # Border color
+
+# ─── GROUP ELEMENT ────────────────────────────────────────────
+
+# Element (type: group):
+#   layout:    "row" | "grid"        # Auto-layout mode (default: "row")
+#   columns:   number                # Number of columns (grid only, default: 3)
+#   gap:       number                # Gap between items in inches (default: 0.25)
+#   card:      CardStyle             # Background style for each item
+#   items:     list[GroupItem]       # (required)
+
+# CardStyle:
+#   fill:      HexColor
+#   radius:    number                # Corner radius in inches
+#   shadow:    Shadow
+#   border:    HexColor              # Border color
+
+# GroupItem:
+#   # Content (use one):
+#   runs:      list[Run]             # Rich text lines
+#   text:      string                # Simple text
+#   elements:  list[Element]         # Sub-elements (positioned relative to card)
+#
+#   # Optional icon (rendered above text):
+#   icon:      string | IconConfig
+#
+#   # Text properties:
+#   align:     "left" | "center" | "right"   (default: "center")
+#   valign:    "top" | "middle" | "bottom"    (default: "middle")
+
+# IconConfig (inside GroupItem):
+#   name:      string       # Icon name or raw character
+#   bg:        HexColor     # Circle background
+#   color:     HexColor     # Glyph color
+#   size:      number       # Circle diameter in inches
+
+# ═══════════════════════════════════════════════════════════════
+#  LAYOUT DIMENSIONS
+# ═══════════════════════════════════════════════════════════════
+#
+#  Layout     Width    Height    Aspect
+#  ───────    ─────    ──────    ──────
+#  16x9       10"      5.625"    16:9
+#  16x10      10"      6.25"     16:10
+#  4x3        10"      7.5"      4:3
+#  wide       13.3"    7.5"      ~16:9
+#
+#  All coordinates (x, y, w, h) are in inches.
+#  Origin (0, 0) is the top-left corner of the slide.
+
+# ═══════════════════════════════════════════════════════════════
+#  SHADOW PRESETS
+# ═══════════════════════════════════════════════════════════════
+#
+#  Preset     Blur  Offset  Angle  Color     Opacity
+#  ───────    ────  ──────  ─────  ──────    ───────
+#  default    6     2       135    000000    0.15
+#  soft       8     2       135    000000    0.10
+#  hard       3     3       135    000000    0.25
+#  glow       10    0       0      000000    0.10
+#  up         6     2       270    000000    0.12
+
+# ═══════════════════════════════════════════════════════════════
+#  THEME VARIABLE RESOLUTION
+# ═══════════════════════════════════════════════════════════════
+#
+#  1. All values under theme.colors and theme.fonts are flattened
+#     into a single lookup map.
+#
+#  2. Every string in the spec matching /^\$[a-zA-Z_]\w*$/ is
+#     resolved against this map.
+#
+#  3. Resolution is recursive (max 5 passes) to support
+#     inter-references: `bg_dark: $primary`
+#
+#  4. Strings like "$4.2M" are NOT resolved ($ must be followed
+#     by a letter or underscore, and the entire string must match).
+#
+#  5. Unresolved variables emit a warning and pass through as-is.
+
+# ═══════════════════════════════════════════════════════════════
+#  MASTER TEMPLATE RESOLUTION
+# ═══════════════════════════════════════════════════════════════
+#
+#  1. Master elements are deep-copied per slide instantiation.
+#
+#  2. Any string containing {{key}} is replaced with the
+#     corresponding value from the slide's `data` map.
+#
+#  3. Multiple placeholders per string are supported:
+#     "{{name}} — {{date}}" → "Acme Corp — Oct 2025"
+#
+#  4. Unmatched placeholders pass through as-is.
+#
+#  5. Slide-level `elements` are appended AFTER master elements.
+
+# ═══════════════════════════════════════════════════════════════
+#  GROUP AUTO-LAYOUT
+# ═══════════════════════════════════════════════════════════════
+#
+#  Row layout:
+#    Items are placed side-by-side horizontally.
+#    item_width = (group_w - gap * (count - 1)) / count
+#    item_height = group_h
+#
+#  Grid layout:
+#    Items fill a grid of `columns` columns.
+#    rows = ceil(count / columns)
+#    item_width  = (group_w - gap * (columns - 1)) / columns
+#    item_height = (group_h - gap * (rows - 1)) / rows
+#
+#  Items are positioned automatically. No x/y needed on items.
+#  For full manual control, use individual elements instead.

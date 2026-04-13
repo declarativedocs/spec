@@ -1,0 +1,317 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ddf.dev/schemas/presentation/v0.1.0",
+  "title": "DDF Presentation",
+  "description": "Declarative Document Format — Presentation schema v0.1.0",
+  "type": "object",
+  "required": ["presentation"],
+  "additionalProperties": false,
+  "properties": {
+    "presentation": {
+      "type": "object",
+      "required": ["slides"],
+      "additionalProperties": false,
+      "properties": {
+        "layout": {
+          "type": "string",
+          "enum": ["16x9", "16x10", "4x3", "wide"],
+          "default": "16x9"
+        },
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "theme": { "$ref": "#/$defs/Theme" },
+        "masters": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/Master" }
+        },
+        "slides": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Slide" },
+          "minItems": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "HexColor": {
+      "type": "string",
+      "pattern": "^(\\$[a-zA-Z_]\\w*|[0-9a-fA-F]{6})$",
+      "description": "6-char hex color (no #) or $theme_variable"
+    },
+    "Theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "colors": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "fonts": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "Master": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "background": {
+          "oneOf": [
+            { "type": "string" },
+            { "$ref": "#/$defs/Background" }
+          ]
+        },
+        "elements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Element" }
+        }
+      }
+    },
+    "Background": {
+      "type": "object",
+      "properties": {
+        "color": { "type": "string" },
+        "path": { "type": "string" },
+        "transparency": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "Slide": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "master": { "type": "string" },
+        "data": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "background": {
+          "oneOf": [
+            { "type": "string" },
+            { "$ref": "#/$defs/Background" }
+          ]
+        },
+        "notes": { "type": "string" },
+        "elements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Element" }
+        }
+      }
+    },
+    "Shadow": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["default", "soft", "hard", "glow", "up"]
+        },
+        { "$ref": "#/$defs/ShadowObject" }
+      ]
+    },
+    "ShadowObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "blur": { "type": "number", "default": 6 },
+        "offset": { "type": "number", "default": 2 },
+        "angle": { "type": "number", "default": 135 },
+        "color": { "type": "string", "default": "000000" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.15 }
+      }
+    },
+    "LineStyle": {
+      "type": "object",
+      "properties": {
+        "color": { "type": "string" },
+        "width": { "type": "number" }
+      }
+    },
+    "Run": {
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string" },
+        "font": { "type": "string" },
+        "size": { "type": "number" },
+        "color": { "type": "string" },
+        "bold": { "type": "boolean" },
+        "italic": { "type": "boolean" },
+        "underline": { "type": "boolean" },
+        "spaceAfter": { "type": "number" },
+        "link": { "type": "string" }
+      }
+    },
+    "BulletItem": {
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string" },
+        "font": { "type": "string" },
+        "size": { "type": "number" },
+        "color": { "type": "string" },
+        "bold": { "type": "boolean" },
+        "indent": { "type": "integer", "minimum": 0 },
+        "spaceAfter": { "type": "number" }
+      }
+    },
+    "Series": {
+      "type": "object",
+      "required": ["name", "labels", "values"],
+      "properties": {
+        "name": { "type": "string" },
+        "labels": { "type": "array", "items": { "type": "string" } },
+        "values": { "type": "array", "items": { "type": "number" } }
+      }
+    },
+    "ChartStyle": {
+      "type": "object",
+      "properties": {
+        "legend": { "type": "boolean" },
+        "legendPos": { "type": "string", "enum": ["b", "t", "l", "r"] },
+        "legendSize": { "type": "number" },
+        "dataLabels": { "type": "string", "enum": ["outEnd", "inEnd", "center"] },
+        "dataLabelColor": { "type": "string" },
+        "showPercent": { "type": "boolean" },
+        "smooth": { "type": "boolean" },
+        "lineSize": { "type": "number" },
+        "axisColor": { "type": "string" },
+        "gridLines": { "type": "string", "enum": ["subtle", "none"] },
+        "chartArea": { "type": "object" }
+      }
+    },
+    "CellObject": {
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string" },
+        "font": { "type": "string" },
+        "size": { "type": "number" },
+        "color": { "type": "string" },
+        "fill": { "type": "string" },
+        "bold": { "type": "boolean" },
+        "italic": { "type": "boolean" },
+        "align": { "type": "string", "enum": ["left", "center", "right"] },
+        "valign": { "type": "string", "enum": ["top", "middle", "bottom"] },
+        "colspan": { "type": "integer" },
+        "rowspan": { "type": "integer" }
+      }
+    },
+    "CardStyle": {
+      "type": "object",
+      "properties": {
+        "fill": { "type": "string" },
+        "radius": { "type": "number" },
+        "shadow": { "$ref": "#/$defs/Shadow" },
+        "border": { "type": "string" }
+      }
+    },
+    "IconConfig": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "bg": { "type": "string" },
+        "color": { "type": "string", "default": "FFFFFF" },
+        "size": { "type": "number" }
+      }
+    },
+    "GroupItem": {
+      "type": "object",
+      "properties": {
+        "runs": { "type": "array", "items": { "$ref": "#/$defs/Run" } },
+        "text": { "type": "string" },
+        "elements": { "type": "array", "items": { "$ref": "#/$defs/Element" } },
+        "icon": {
+          "oneOf": [
+            { "type": "string" },
+            { "$ref": "#/$defs/IconConfig" }
+          ]
+        },
+        "align": { "type": "string", "enum": ["left", "center", "right"] },
+        "valign": { "type": "string", "enum": ["top", "middle", "bottom"] },
+        "font": { "type": "string" },
+        "size": { "type": "number" },
+        "color": { "type": "string" },
+        "bold": { "type": "boolean" }
+      }
+    },
+    "Element": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["text", "shape", "image", "chart", "table", "group", "icon"]
+        },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number" },
+        "h": { "type": "number" },
+
+        "text": { "type": "string" },
+        "runs": { "type": "array", "items": { "$ref": "#/$defs/Run" } },
+        "bullets": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/$defs/BulletItem" }
+            ]
+          }
+        },
+        "font": { "type": "string" },
+        "size": { "type": "number" },
+        "color": { "type": "string" },
+        "bold": { "type": "boolean" },
+        "italic": { "type": "boolean" },
+        "underline": { "type": "boolean" },
+        "align": { "type": "string", "enum": ["left", "center", "right", "justify"] },
+        "valign": { "type": "string", "enum": ["top", "middle", "bottom"] },
+        "margin": { "type": "number" },
+        "lineSpacing": { "type": "number" },
+        "spaceAfter": { "type": "number" },
+        "spaceBefore": { "type": "number" },
+        "rotate": { "type": "number" },
+        "charSpacing": { "type": "number" },
+
+        "shape": { "type": "string" },
+        "fill": { "type": "string" },
+        "line": { "$ref": "#/$defs/LineStyle" },
+        "radius": { "type": "number" },
+        "shadow": { "$ref": "#/$defs/Shadow" },
+        "transparency": { "type": "number", "minimum": 0, "maximum": 100 },
+
+        "path": { "type": "string" },
+        "data": { "type": "string" },
+        "rounding": { "type": "boolean" },
+        "sizing": { "type": "object" },
+        "altText": { "type": "string" },
+        "link": { "type": "string" },
+
+        "icon": {
+          "oneOf": [
+            { "type": "string" },
+            { "$ref": "#/$defs/IconConfig" }
+          ]
+        },
+        "bg": { "type": "string" },
+
+        "chart": { "type": "string", "enum": ["bar", "line", "pie", "doughnut", "scatter", "radar"] },
+        "series": { "type": "array", "items": { "$ref": "#/$defs/Series" } },
+        "colors": { "type": "array", "items": { "type": "string" } },
+        "direction": { "type": "string", "enum": ["col", "bar"] },
+        "chartTitle": { "type": "string" },
+        "style": { "$ref": "#/$defs/ChartStyle" },
+
+        "rows": { "type": "array" },
+        "colWidths": { "type": "array", "items": { "type": "number" } },
+        "border": { "$ref": "#/$defs/LineStyle" },
+        "autoPage": { "type": "boolean" },
+
+        "layout": { "type": "string", "enum": ["row", "grid"] },
+        "columns": { "type": "integer", "minimum": 1 },
+        "gap": { "type": "number" },
+        "card": { "$ref": "#/$defs/CardStyle" },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/GroupItem" } }
+      }
+    }
+  }
+}
