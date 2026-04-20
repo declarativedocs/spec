@@ -2,8 +2,6 @@
 
 An open standard for describing documents in YAML. Designed as a token-efficient compilation target for LLMs.
 
-**Created by [WeAreBrain](https://wearebrain.com)**
-
 ## What is DDF?
 
 DDF is a set of YAML schemas that declaratively describe documents — presentations, reports, PDFs. A compiler reads the YAML and produces the real file (.pptx, .docx, .pdf).
